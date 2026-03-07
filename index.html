@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FRC Pit Command | Adaptive Dashboard</title>
+    <title>FRC Pit Command | Final</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -17,7 +17,6 @@
             border-width: 2px;
             background: rgba(30, 41, 59, 0.9);
         }
-        .refresh-bar { transition: width 1s linear; }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen p-4 md:p-6 font-sans">
@@ -25,120 +24,106 @@
     <div id="app" class="max-w-5xl mx-auto" v-cloak>
         
         <div class="fixed top-0 left-0 w-full h-1 bg-gray-900 z-50">
-            <div class="h-full bg-blue-600 refresh-bar" :style="{ width: (timer / 60) * 100 + '%' }"></div>
+            <div class="h-full bg-blue-600 transition-all duration-1000" :style="{ width: (timer / 60) * 100 + '%' }"></div>
         </div>
 
-        <div v-if="showSettings" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
-                <h2 class="text-2xl font-black mb-6 uppercase italic">Dashboard Settings</h2>
-                
+        <div v-if="showSettings || !settings.apiKey" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+            <div class="bg-gray-900 border border-blue-500/30 p-8 rounded-2xl w-full max-w-md shadow-2xl">
+                <h2 class="text-2xl font-black mb-2 uppercase italic text-blue-500">System Setup</h2>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">TBA API Key</label>
-                        <input v-model="settings.apiKey" type="password" placeholder="Paste API Key here..."
-                               class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">TBA API Key</label>
+                        <input v-model="settings.apiKey" type="password" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Team Number</label>
-                            <input v-model="settings.teamNumber" type="text" placeholder="e.g. 175"
-                                   class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Team #</label>
+                            <input v-model="settings.teamNumber" type="text" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Event Key</label>
-                            <input v-model="settings.eventKey" type="text" placeholder="e.g. 2026mabil"
-                                   class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Event Key</label>
+                            <input v-model="settings.eventKey" type="text" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
                         </div>
                     </div>
                 </div>
-
-                <div class="mt-8 flex gap-3">
-                    <button @click="saveSettings" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg transition-colors uppercase italic">Save & Sync</button>
-                    <button @click="showSettings = false" class="px-6 text-gray-400 font-bold uppercase text-xs">Cancel</button>
-                </div>
+                <button @click="saveSettings" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl transition-all uppercase italic tracking-widest">Save & Initialize</button>
             </div>
         </div>
 
         <div v-if="nextMatch && !loading" class="mb-8 p-6 rounded-2xl bg-blue-600/10 border border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div>
-                    <span class="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-full animate-pulse uppercase tracking-widest">Next Assignment</span>
-                    <h2 class="text-4xl font-black mt-2 italic uppercase tracking-tighter">Match {{ nextMatch.match_number }}</h2>
-                    <p class="text-blue-300 font-medium italic underline decoration-blue-500/50 underline-offset-4">
-                        {{ isOnRed(nextMatch) ? 'RED' : 'BLUE' }} ALLIANCE
+                    <span class="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-full animate-pulse uppercase tracking-widest">Coming Up Next</span>
+                    <h2 class="text-4xl font-black mt-2 italic uppercase">Match {{ nextMatch.match_number }}</h2>
+                    <p class="text-blue-300 font-medium italic underline decoration-blue-500/50 underline-offset-4 uppercase">
+                        {{ isOnRed(nextMatch) ? 'Red' : 'Blue' }} Alliance
                     </p>
                 </div>
-                
                 <div class="text-center md:text-right">
-                    <p class="text-xs text-blue-400 uppercase font-bold tracking-widest">Est. Start Time</p>
+                    <p class="text-xs text-blue-400 uppercase font-bold tracking-widest">Est. Start</p>
                     <p class="text-5xl font-black text-white tracking-tighter">{{ formatTime(nextMatch.predicted_time || nextMatch.time) }}</p>
                 </div>
-
                 <div :class="isOnRed(nextMatch) ? 'bg-red-600' : 'bg-blue-600'" class="px-8 py-4 rounded-xl text-center min-w-[160px] shadow-lg">
                     <span class="block text-[10px] text-white/70 font-bold uppercase">Bumper Color</span>
-                    <span class="text-3xl font-black text-white italic underline">{{ isOnRed(nextMatch) ? 'RED' : 'BLUE' }}</span>
+                    <span class="text-3xl font-black text-white italic underline uppercase">{{ isOnRed(nextMatch) ? 'RED' : 'BLUE' }}</span>
                 </div>
             </div>
         </div>
 
         <header class="flex justify-between items-end mb-6 border-b border-gray-800 pb-4">
             <div>
-                <h1 class="text-2xl font-black text-white uppercase tracking-tighter">
-                    Team <span class="text-blue-500">{{ settings.teamNumber }}</span>
-                </h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <p class="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Event: {{ settings.eventKey }}</p>
-                    <span class="text-gray-700 text-xs">|</span>
-                    <p class="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Syncing in {{ timer }}s</p>
-                </div>
+                <h1 class="text-2xl font-black text-white uppercase tracking-tighter">Team <span class="text-blue-500">{{ settings.teamNumber }}</span></h1>
+                <p class="text-[10px] text-gray-500 font-mono uppercase tracking-widest mt-1">Event: {{ settings.eventKey }} | Syncing in {{ timer }}s</p>
             </div>
-            
-            <div class="flex items-center gap-4">
-                <div v-if="!loading" class="hidden md:flex items-center gap-3 text-xs font-bold bg-gray-900 px-4 py-2 rounded-lg border border-gray-800">
-                    <span class="text-green-400">{{ stats.wins }}W</span>
-                    <span class="text-red-400">{{ stats.losses }}L</span>
-                    <span class="text-amber-400">{{ stats.ties }}T</span>
+            <div v-if="!loading" class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-3 text-xs font-bold bg-gray-900 px-4 py-2 rounded-lg border border-gray-800">
+                    <span class="text-green-400">{{ stats.wins }}W</span> - <span class="text-red-400">{{ stats.losses }}L</span> - <span class="text-amber-400">{{ stats.ties }}T</span>
                 </div>
                 <button @click="showSettings = true" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg border border-gray-700 transition-colors">
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </button>
             </div>
         </header>
 
         <div v-if="!loading && matches.length" class="space-y-3">
             <div v-for="match in sortedMatches" :key="match.key" 
-                 :class="isNext(match) ? 'next-match-highlight ring-2 ring-blue-500/20 shadow-xl' : 'bg-gray-900 border-gray-800'"
+                 :class="isNext(match) ? 'next-match-highlight shadow-xl ring-2 ring-blue-500/20' : 'bg-gray-900 border-gray-800'"
                  class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center border p-3 rounded-xl transition-all">
                 
                 <div class="col-span-2 flex items-center gap-4">
                     <div class="text-center min-w-[50px]">
-                        <span class="block text-[10px] font-bold text-gray-500 uppercase leading-none">{{ match.comp_level }}</span>
+                        <span class="block text-[9px] font-bold text-gray-500 uppercase leading-none">{{ match.comp_level }}</span>
                         <span class="text-xl font-black italic">#{{ match.match_number }}</span>
                     </div>
-                    <div :class="isOnRed(match) ? 'bg-red-600' : 'bg-blue-600'" class="w-2.5 h-10 rounded-full"></div>
+                    <div :class="isOnRed(match) ? 'bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.3)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.3)]'" class="w-2.5 h-10 rounded-full"></div>
                 </div>
 
                 <div class="col-span-4 flex gap-1.5 justify-center md:justify-start">
                     <div v-for="team in (isOnRed(match) ? match.alliances.red.team_keys : match.alliances.blue.team_keys)"
-                         :class="cleanTeam(team) == settings.teamNumber ? 'bg-white text-black scale-110 shadow-md' : 'bg-gray-800 text-gray-400'"
-                         class="px-2 py-1.5 rounded font-bold text-xs font-mono w-14 text-center transition-all">
+                         :class="cleanTeam(team) == settings.teamNumber ? 'bg-white text-black scale-110 shadow-md ring-1 ring-white' : 'bg-gray-800 text-gray-400'"
+                         class="px-2 py-1.5 rounded font-bold text-xs font-mono w-14 text-center">
                         {{ cleanTeam(team) }}
                     </div>
                 </div>
 
                 <div class="col-span-3 text-center md:text-left">
                     <div v-if="getMyScore(match) === '--'" class="flex flex-col">
-                        <span class="text-[9px] text-gray-500 uppercase font-black tracking-widest">Est. Start</span>
+                        <span class="text-[9px] text-gray-500 uppercase font-black tracking-widest leading-none">Estimated Start</span>
                         <span class="text-lg font-bold text-blue-400">{{ formatTime(match.predicted_time || match.time) }}</span>
                     </div>
-                    <div v-else class="flex items-center gap-3 justify-center md:justify-start">
-                        <span class="text-xl font-black" :class="getMyScore(match) > getTheirScore(match) ? 'text-green-400' : 'text-red-400'">{{ getMyScore(match) }}</span>
-                        <span class="text-gray-700 font-light">/</span>
-                        <span class="text-xl font-black text-gray-500">{{ getTheirScore(match) }}</span>
+                    <div v-else class="flex flex-col">
+                        <div class="flex items-center gap-3 justify-center md:justify-start leading-none">
+                            <span class="text-xl font-black" :class="getMyScore(match) > getTheirScore(match) ? 'text-green-400' : 'text-red-400'">{{ getMyScore(match) }}</span>
+                            <span class="text-gray-700 font-light">/</span>
+                            <span class="text-xl font-black text-gray-500">{{ getTheirScore(match) }}</span>
+                        </div>
+                        <span class="text-[9px] font-black uppercase tracking-widest mt-1" :class="getMyScore(match) > getTheirScore(match) ? 'text-green-500/50' : 'text-red-500/50'">
+                            {{ getMyScore(match) > getTheirScore(match) ? 'WIN' : 'LOSS' }}
+                        </span>
                     </div>
                 </div>
 
-                <div class="col-span-3 flex justify-end gap-1 opacity-20">
+                <div class="col-span-3 flex justify-end gap-1 opacity-20 hover:opacity-100 transition-opacity">
                     <div v-for="team in (isOnRed(match) ? match.alliances.blue.team_keys : match.alliances.red.team_keys)"
                          class="px-2 py-1 rounded bg-gray-800 text-gray-500 text-[10px] font-mono w-10 text-center">
                         {{ cleanTeam(team) }}
@@ -147,11 +132,7 @@
             </div>
         </div>
 
-        <div v-else-if="loading" class="text-center py-20 text-gray-500 animate-pulse uppercase tracking-widest text-xs font-black">Syncing...</div>
-        <div v-else class="text-center py-20 bg-gray-900 rounded-2xl border border-gray-800">
-            <p class="text-gray-400 mb-4">No data found. Check your API key and Event Key.</p>
-            <button @click="showSettings = true" class="text-blue-500 font-bold uppercase text-xs underline">Configure Settings</button>
-        </div>
+        <div v-else-if="loading" class="text-center py-20 text-gray-500 animate-pulse uppercase tracking-widest text-xs font-black">Connecting...</div>
     </div>
 
     <script>
@@ -160,39 +141,37 @@
         createApp({
             setup() {
                 const showSettings = ref(false);
+                const loading = ref(true);
+                const timer = ref(60);
+                const matches = ref([]);
+                let intervalId = null;
+
                 const settings = reactive({
                     apiKey: localStorage.getItem('TBA_API_KEY') || '',
                     teamNumber: localStorage.getItem('TBA_TEAM_NUM') || '175',
                     eventKey: localStorage.getItem('TBA_EVENT_KEY') || '2026mabil'
                 });
-                
-                const matches = ref([]);
-                const loading = ref(true);
-                const timer = ref(60);
-                let intervalId = null;
 
                 const fetchMatches = async () => {
                     if (!settings.apiKey) {
-                        showSettings.value = true;
                         loading.value = false;
+                        showSettings.value = true;
                         return;
                     }
 
+                    loading.value = true;
                     try {
                         const teamKey = `frc${settings.teamNumber}`;
                         const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${settings.eventKey}/matches/simple`, {
                             headers: { 'X-TBA-Auth-Key': settings.apiKey }
                         });
                         const data = await res.json();
-                        if (data.Error) throw new Error(data.Error);
                         
-                        matches.value = Array.isArray(data) 
-                            ? data.filter(m => [...m.alliances.red.team_keys, ...m.alliances.blue.team_keys].includes(teamKey))
-                            : [];
-                    } catch (e) {
-                        console.error(e);
-                        matches.value = [];
-                    } finally {
+                        if (Array.isArray(data)) {
+                            matches.value = data.filter(m => [...m.alliances.red.team_keys, ...m.alliances.blue.team_keys].includes(teamKey));
+                        }
+                    } catch (e) { console.error(e); }
+                    finally {
                         loading.value = false;
                         timer.value = 60;
                     }
@@ -203,26 +182,33 @@
                     localStorage.setItem('TBA_TEAM_NUM', settings.teamNumber);
                     localStorage.setItem('TBA_EVENT_KEY', settings.eventKey);
                     showSettings.value = false;
-                    loading.value = true;
                     fetchMatches();
                 };
 
                 const startTimer = () => {
                     intervalId = setInterval(() => {
-                        if (!showSettings.value) {
+                        if (!showSettings.value && settings.apiKey) {
                             if (timer.value > 0) timer.value--;
                             else fetchMatches();
                         }
                     }, 1000);
                 };
 
-                // Logic Helpers
+                // Helpers
                 const sortedMatches = computed(() => [...matches.value].sort((a, b) => (a.time || 0) - (b.time || 0)));
                 const nextMatch = computed(() => sortedMatches.value.find(m => m.alliances.red.score === -1) || null);
                 const isNext = (match) => nextMatch.value && match.key === nextMatch.value.key;
                 const isOnRed = (match) => match.alliances.red.team_keys.includes(`frc${settings.teamNumber}`);
-                const getMyScore = (m) => isOnRed(m) ? (m.alliances.red.score === -1 ? '--' : m.alliances.red.score) : (m.alliances.blue.score === -1 ? '--' : m.alliances.blue.score);
-                const getTheirScore = (m) => isOnRed(m) ? (m.alliances.blue.score === -1 ? '--' : m.alliances.blue.score) : (m.alliances.red.score === -1 ? '--' : m.alliances.red.score);
+                
+                const getMyScore = (m) => {
+                    const s = isOnRed(m) ? m.alliances.red.score : m.alliances.blue.score;
+                    return s === -1 ? '--' : s;
+                };
+
+                const getTheirScore = (m) => {
+                    const s = isOnRed(m) ? m.alliances.blue.score : m.alliances.red.score;
+                    return s === -1 ? '--' : s;
+                };
 
                 const stats = computed(() => {
                     const played = matches.value.filter(m => m.alliances.red.score !== -1);
@@ -236,9 +222,9 @@
                 onMounted(() => { fetchMatches(); startTimer(); });
                 onUnmounted(() => clearInterval(intervalId));
 
-                return {
-                    settings, showSettings, loading, sortedMatches, stats, nextMatch, timer,
-                    saveSettings, isOnRed, getMyScore, getTheirScore, isNext,
+                return { 
+                    settings, showSettings, loading, matches, sortedMatches, timer, 
+                    saveSettings, isOnRed, getMyScore, getTheirScore, isNext, nextMatch, stats,
                     cleanTeam: (key) => key.replace('frc', ''),
                     formatTime: (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'TBD'
                 };
