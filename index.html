@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FRC Pit Command</title>
+    <title>FRC Pit Command | Auto-Sync</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -17,12 +17,20 @@
             border-width: 2px;
             background: rgba(30, 41, 59, 0.9);
         }
+        /* Progress bar for the refresh timer */
+        .refresh-bar {
+            transition: width 1s linear;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen p-4 md:p-6">
 
     <div id="app" class="max-w-5xl mx-auto" v-cloak>
         
+        <div class="fixed top-0 left-0 w-full h-1 bg-gray-900 z-50">
+            <div class="h-full bg-blue-600 refresh-bar" :style="{ width: (timer / 60) * 100 + '%' }"></div>
+        </div>
+
         <div v-if="nextMatch" class="mb-8 p-6 rounded-2xl bg-blue-600/10 border border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div>
@@ -48,11 +56,15 @@
                 <h1 class="text-2xl font-black text-white uppercase tracking-tighter">
                     Team <span class="text-blue-500">{{ teamNumber }}</span>
                 </h1>
-                <p class="text-xs text-gray-500 font-mono uppercase tracking-widest">Event: {{ eventKey }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <p class="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Event: {{ eventKey }}</p>
+                    <span class="text-gray-700 text-xs">|</span>
+                    <p class="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Syncing in {{ timer }}s</p>
+                </div>
             </div>
             <div v-if="!loading" class="flex items-center gap-3">
                 <div class="text-xs font-bold bg-gray-900 px-4 py-2 rounded-lg border border-gray-800">
-                    <span class="text-gray-500 mr-2 uppercase">Record</span>
+                    <span class="text-gray-500 mr-2 uppercase italic">Record</span>
                     <span class="text-green-400">{{ stats.wins }}W</span> - 
                     <span class="text-red-400">{{ stats.losses }}L</span> - 
                     <span class="text-amber-400">{{ stats.ties }}T</span>
@@ -94,7 +106,7 @@
                     </div>
                 </div>
 
-                <div class="col-span-3 flex justify-end gap-1 opacity-30 group-hover:opacity-100 transition-opacity">
+                <div class="col-span-3 flex justify-end gap-1 opacity-20">
                     <div v-for="team in (isOnRed(match) ? match.alliances.blue.team_keys : match.alliances.red.team_keys)"
                          class="px-2 py-1 rounded bg-gray-800 text-gray-500 text-[10px] font-mono w-10 text-center">
                         {{ cleanTeam(team) }}
@@ -105,19 +117,16 @@
 
         <div v-else class="text-center py-20">
             <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p class="text-gray-500 uppercase tracking-widest text-xs font-black">Connecting to TBA...</p>
+            <p class="text-gray-500 uppercase tracking-widest text-xs font-black">Syncing Schedule...</p>
         </div>
     </div>
 
     <script>
-        /** * DASHBOARD CONFIGURATION 
-         * Change these values to update the view for a different team or event.
-         */
         const TEAM_NUMBER = '175'; 
         const EVENT_KEY = '2026mabil';
         const API_KEY = '';
 
-        const { createApp, ref, computed, onMounted } = Vue;
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
         createApp({
             setup() {
@@ -127,6 +136,8 @@
                 
                 const matches = ref([]);
                 const loading = ref(true);
+                const timer = ref(60);
+                let intervalId = null;
 
                 const fetchMatches = async () => {
                     try {
@@ -134,21 +145,27 @@
                             headers: { 'X-TBA-Auth-Key': API_KEY }
                         });
                         const data = await res.json();
-                        // Filter for current team
                         matches.value = data.filter(m => 
                             [...m.alliances.red.team_keys, ...m.alliances.blue.team_keys].includes(teamKey.value)
                         );
                     } finally {
                         loading.value = false;
+                        timer.value = 60; // Reset countdown
                     }
                 };
 
-                const sortedMatches = computed(() => [...matches.value].sort((a, b) => (a.time || 0) - (b.time || 0)));
-                
-                const nextMatch = computed(() => {
-                    return sortedMatches.value.find(m => m.alliances.red.score === -1) || null;
-                });
+                const startTimer = () => {
+                    intervalId = setInterval(() => {
+                        if (timer.value > 0) {
+                            timer.value--;
+                        } else {
+                            fetchMatches();
+                        }
+                    }, 1000);
+                };
 
+                const sortedMatches = computed(() => [...matches.value].sort((a, b) => (a.time || 0) - (b.time || 0)));
+                const nextMatch = computed(() => sortedMatches.value.find(m => m.alliances.red.score === -1) || null);
                 const isNext = (match) => nextMatch.value && match.key === nextMatch.value.key;
                 const isOnRed = (match) => match.alliances.red.team_keys.includes(teamKey.value);
                 
@@ -176,11 +193,18 @@
                     return new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                 };
 
-                onMounted(fetchMatches);
+                onMounted(() => {
+                    fetchMatches();
+                    startTimer();
+                });
+
+                onUnmounted(() => {
+                    if (intervalId) clearInterval(intervalId);
+                });
 
                 return {
                     teamNumber, eventKey, loading, sortedMatches, stats, nextMatch,
-                    isOnRed, getMyScore, getTheirScore, formatTime, isNext,
+                    isOnRed, getMyScore, getTheirScore, formatTime, isNext, timer,
                     cleanTeam: (key) => key.replace('frc', '')
                 };
             }
