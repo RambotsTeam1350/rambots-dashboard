@@ -45,6 +45,19 @@
                             <input v-model="settings.eventKey" type="text" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
                         </div>
                     </div>
+                    <div class="border-t border-gray-700 pt-4">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Scouting Sheet (Optional)</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Google API Key</label>
+                                <input v-model="settings.sheetsApiKey" type="password" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Spreadsheet ID</label>
+                                <input v-model="settings.sheetsId" type="text" placeholder="from the sheet URL" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none placeholder-gray-700">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <button @click="saveSettings" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl transition-all uppercase italic tracking-widest">Save & Initialize</button>
             </div>
@@ -125,6 +138,13 @@
                             <p class="text-2xl font-black text-white">{{ teamModal.played ?? '—' }}</p>
                         </div>
                     </div>
+                    <div v-if="teamModal.scouting && Object.keys(teamModal.scouting).length" class="mt-4 border-t border-gray-800 pt-4 space-y-2">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Scouting Notes</p>
+                        <div v-for="(value, key) in teamModal.scouting" :key="key" class="flex justify-between gap-4 text-sm">
+                            <span class="text-gray-500 font-bold shrink-0">{{ key }}</span>
+                            <span class="text-gray-200 text-right">{{ value }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -198,8 +218,38 @@
                 const settings = reactive({
                     apiKey: localStorage.getItem('TBA_API_KEY') || '',
                     teamNumber: localStorage.getItem('TBA_TEAM_NUM') || '175',
-                    eventKey: localStorage.getItem('TBA_EVENT_KEY') || '2026mabil'
+                    eventKey: localStorage.getItem('TBA_EVENT_KEY') || '2026mabil',
+                    sheetsApiKey: localStorage.getItem('SHEETS_API_KEY') || '',
+                    sheetsId: localStorage.getItem('SHEETS_ID') || '',
                 });
+
+                const scoutingData = ref({});  // team number string -> { header: value, ... }
+
+                const fetchScoutingData = async () => {
+                    if (!settings.sheetsApiKey || !settings.sheetsId) return;
+                    try {
+                        const url = `https://sheets.googleapis.com/v4/spreadsheets/${settings.sheetsId}/values/Sheet1?key=${settings.sheetsApiKey}`;
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        const rows = data.values;
+                        if (!rows || rows.length < 2) return;
+                        const headers = rows[0];  // row 0: header labels; column 0 is team number
+                        const map = {};
+                        for (let i = 1; i < rows.length; i++) {
+                            const row = rows[i];
+                            const teamNum = String(row[0]).trim();
+                            if (!teamNum) continue;
+                            const attrs = {};
+                            for (let j = 1; j < headers.length; j++) {
+                                if (row[j] !== undefined && row[j] !== '') {
+                                    attrs[headers[j]] = row[j];
+                                }
+                            }
+                            map[teamNum] = attrs;
+                        }
+                        scoutingData.value = map;
+                    } catch (e) { console.error('Sheets fetch failed:', e); }
+                };
 
                 const fetchMatches = async () => {
                     if (!settings.apiKey) {
@@ -240,8 +290,11 @@
                     localStorage.setItem('TBA_API_KEY', settings.apiKey);
                     localStorage.setItem('TBA_TEAM_NUM', settings.teamNumber);
                     localStorage.setItem('TBA_EVENT_KEY', settings.eventKey);
+                    localStorage.setItem('SHEETS_API_KEY', settings.sheetsApiKey);
+                    localStorage.setItem('SHEETS_ID', settings.sheetsId);
                     showSettings.value = false;
                     fetchMatches();
+                    fetchScoutingData();
                 };
 
                 const startTimer = () => {
@@ -304,12 +357,13 @@
                             losses: record?.losses ?? null,
                             ties: record?.ties ?? null,
                             played: rankData?.matches_played ?? null,
+                            scouting: scoutingData.value[String(teamData.team_number)] ?? null,
                         };
                     } catch (e) { console.error(e); teamModal.value = null; }
                     finally { teamModalLoading.value = false; }
                 };
 
-                onMounted(() => { fetchMatches(); startTimer(); });
+                onMounted(() => { fetchMatches(); fetchScoutingData(); startTimer(); });
                 onUnmounted(() => clearInterval(intervalId));
 
                 return { 
