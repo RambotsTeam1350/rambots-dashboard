@@ -56,6 +56,8 @@ The sheet must be accessible by anyone with the link:
 6. Optionally add an **HTTP referrer** restriction to lock the key to your machine or domain
 7. Copy the API key
 
+Note that this API Key will only be able to access Google Sheets that are made "publicly accessible to anyone with the link" and in a read-only fashion.  It can't access any of your organization's non-public sheets.
+
 ### Step 3 — Find your Spreadsheet ID
 
 The Spreadsheet ID is in the URL of your Google Sheet:
