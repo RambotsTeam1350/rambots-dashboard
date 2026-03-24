@@ -188,9 +188,9 @@
                     </div>
                 </div>
 
-                <div class="col-span-3 flex justify-end gap-1 opacity-50 hover:opacity-100 transition-opacity">
+                <div class="col-span-3 flex justify-end gap-1.5">
                     <div v-for="team in (isOnRed(match) ? match.alliances.blue.team_keys : match.alliances.red.team_keys)"
-                         class="px-2 py-1 rounded bg-gray-800 text-gray-300 text-[10px] font-mono w-10 text-center cursor-pointer hover:brightness-125 transition-all"
+                         class="px-2 py-1.5 rounded bg-gray-800 text-gray-200 text-xs font-bold font-mono w-14 text-center cursor-pointer hover:brightness-125 transition-all"
                          @click="openTeamModal(team)">
                         {{ cleanTeam(team) }}
                     </div>
