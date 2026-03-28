@@ -381,5 +381,194 @@
             }
         }).mount('#app');
     </script>
+<!-- Help button -->
+<style>
+    #help-button {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 110;
+        background: rgba(59,130,246,0.12);
+        border: 1px solid rgba(59,130,246,0.2);
+        color: #bfdbfe;
+        padding: .5rem .75rem;
+        border-radius: .75rem;
+        font-weight: 700;
+        backdrop-filter: blur(4px);
+        cursor: pointer;
+    }
+    #help-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        background: rgba(0,0,0,0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+    }
+    #help-card {
+        width: 100%;
+        max-width: 920px;
+        background: #0b1220;
+        border: 1px solid rgba(99,102,241,0.12);
+        border-radius: 1rem;
+        padding: 1.25rem;
+        color: #e6eef8;
+        box-shadow: 0 10px 40px rgba(2,6,23,0.6);
+    }
+    .help-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .help-block {
+        flex: 1 1 320px;
+        background: rgba(255,255,255,0.02);
+        border-radius: .75rem;
+        padding: 1rem;
+        border: 1px solid rgba(148,163,184,0.03);
+    }
+    .help-title { font-weight: 900; letter-spacing: .08em; text-transform: uppercase; font-size: .875rem; color: #bfdbfe; }
+    .help-steps { margin-top: .5rem; color: #cfe8ff; font-size: .95rem; line-height: 1.45; }
+    .help-img {
+        width: 100%;
+        max-width: 380px;
+        height: auto;
+        border-radius: .5rem;
+        margin-top: .75rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+        border: 1px solid rgba(255,255,255,0.02);
+        display: block;
+    }
+    #help-close {
+        position: absolute;
+        right: 1.5rem;
+        top: 1.5rem;
+        background: transparent;
+        border: none;
+        color: #9fb7ff;
+        font-size: 1.25rem;
+        cursor: pointer;
+    }
+    @media (max-width:640px) {
+        .help-row { flex-direction: column; }
+    }
+</style>
+
+<button id="help-button" aria-haspopup="dialog" aria-controls="help-overlay" title="Help — how to get API key & open a sheet">
+    Help
+</button>
+
+<div id="help-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="help-card" role="document">
+        <button id="help-close" aria-label="Close help">&times;</button>
+        <h3 class="help-title">Quick Help</h3>
+        <p class="help-steps" style="margin-bottom:.75rem; color:#9fb7ff; font-weight:700;">
+            Steps to get your The Blue Alliance API key and to open a Google Sheet for scouting.
+        </p>
+
+        <div class="help-row">
+            <div class="help-block">
+                <div style="display:flex; align-items:center; gap:.75rem;">
+                    <!-- simple key/browser SVG -->
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <rect x="0.5" y="0.5" width="23" height="23" rx="6" stroke="rgba(99,102,241,0.25)" fill="rgba(99,102,241,0.03)"/>
+                        <path d="M7 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill="#bfdbfe"/>
+                        <path d="M10 12h6v2h-1v2h-2v-2h-3v-2z" fill="#93c5fd"/>
+                    </svg>
+                    <div>
+                        <div style="font-weight:800; color:#e6eef8;">Get TheBlueAlliance API Key</div>
+                        <div style="font-size:.85rem; color:#bcd4ff;">(required to fetch matches & rankings)</div>
+                    </div>
+                </div>
+
+                <ol class="help-steps" style="margin-top:.8rem; padding-left:1.1rem;">
+                    <li>Open a browser and visit: <strong>https://www.thebluealliance.com/account</strong></li>
+                    <li>Sign in or create an account if needed.</li>
+                    <li>Under "API Keys" click "Create New Key" (or copy an existing one).</li>
+                    <li>Paste that key into the "TBA API Key" field in System Setup and Save.</li>
+                </ol>
+
+                
+                <div class="help-img" aria-hidden style="display:flex; align-items:center; justify-content:center; padding:1rem;">
+                    <svg width="100%" height="140" viewBox="0 0 400 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="API key example">
+                        <rect x="0" y="0" width="400" height="140" rx="12" fill="#071024"/>
+                        <rect x="12" y="12" width="376" height="36" rx="8" fill="#0b1226"/>
+                        <text x="24" y="36" fill="#cfe8ff" font-size="14" font-family="sans-serif">thebluealliance.com/account</text>
+                        <g transform="translate(16,64)">
+                            <rect x="0" y="0" width="368" height="56" rx="8" fill="#07192b" stroke="#18304a" />
+                            <text x="16" y="28" fill="#9fb7ff" font-size="13" font-family="monospace">API Key: &lt;your_api_key_here&gt;</text>
+                            <rect x="300" y="12" width="48" height="24" rx="6" fill="#2563eb"/>
+                            <text x="312" y="28" fill="#fff" font-size="11" font-family="sans-serif">Copy</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="help-block">
+                <div style="display:flex; align-items:center; gap:.75rem;">
+                    <!-- spreadsheet SVG -->
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <rect x="0.5" y="0.5" width="23" height="23" rx="6" stroke="rgba(16,185,129,0.18)" fill="rgba(16,185,129,0.03)"/>
+                        <rect x="5" y="5" width="14" height="4" rx="1" fill="#bbf7d0"/>
+                        <rect x="5" y="11" width="6" height="6" rx="1" fill="#bbf7d0"/>
+                        <rect x="13" y="11" width="6" height="6" rx="1" fill="#86efac"/>
+                    </svg>
+                    <div>
+                        <div style="font-weight:800; color:#e6eef8;">Open a Google Sheet (Scouting)</div>
+                        <div style="font-size:.85rem; color:#bcd4ff;">(optional: paste id & API key into Scouting fields)</div>
+                    </div>
+                </div>
+
+                <ol class="help-steps" style="margin-top:.8rem; padding-left:1.1rem;">
+                    <li>Open Google Sheets at <strong>https://sheets.google.com</strong> and create or open a spreadsheet.</li>
+                    <li>From the sheet URL copy the spreadsheet ID (the long string between /d/ and /edit).</li>
+                    <li>Get a Google API key (enable Sheets API in Google Cloud Console) and paste here.</li>
+                    <li>Save settings. The app will fetch the "Sheet1" range and use row 1 as headers (column A should be team number).</li>
+                </ol>
+
+                <div class="help-img" aria-hidden style="display:flex; align-items:center; justify-content:center; padding:1rem;">
+                    <svg width="100%" height="140" viewBox="0 0 400 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spreadsheet example">
+                        <rect x="0" y="0" width="400" height="140" rx="12" fill="#071024"/>
+                        <g transform="translate(12,12)">
+                            <rect x="0" y="0" width="376" height="116" rx="8" fill="#061426" stroke="#06303f"/>
+                            <text x="12" y="20" fill="#a7f3d0" font-size="12" font-family="sans-serif">https://docs.google.com/spreadsheets/d/<tspan fill="#ffd7a6">SPREADSHEET_ID</tspan>/edit</text>
+                            <g transform="translate(12,34)">
+                                <rect width="56" height="22" rx="4" fill="#0ea5a3"/><text x="8" y="16" fill="#022" font-family="monospace" font-size="11">Team</text>
+                                <rect x="68" width="120" height="22" rx="4" fill="#064e3b"/><text x="76" y="16" fill="#a7f3d0" font-family="monospace" font-size="11">Notes</text>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <p style="margin-top:1rem; font-size:.85rem; color:#9fb7ff;">
+            Tip: If you don't want to enable the Sheets API, you can leave the scouting fields empty. The app will still show matches using the TBA key.
+        </p>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const btn = document.getElementById('help-button');
+        const overlay = document.getElementById('help-overlay');
+        const closeBtn = document.getElementById('help-close');
+
+        function openHelp() {
+            overlay.style.display = 'flex';
+            overlay.setAttribute('aria-hidden', 'false');
+            // trap focus lightly
+            closeBtn.focus();
+        }
+        function closeHelp() {
+            overlay.style.display = 'none';
+            overlay.setAttribute('aria-hidden', 'true');
+            btn.focus();
+        }
+
+        btn.addEventListener('click', openHelp);
+        closeBtn.addEventListener('click', closeHelp);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeHelp(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.style.display === 'flex') closeHelp(); });
+    })();
+</script>
 </body>
 </html>
