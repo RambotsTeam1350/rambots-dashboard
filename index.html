@@ -96,7 +96,7 @@
                         <span class="text-gray-400">Rank <span class="text-white">{{ ranking.rank }}</span><span class="text-gray-600">/{{ ranking.total }}</span></span>
                     </template>
                 </div>
-                <button @click="showSettings = true" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg border border-gray-700 transition-colors">
+                <button v-if="!manualSettings" @click="showSettings = true" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg border border-gray-700 transition-colors">
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </button>
             </div>
@@ -104,43 +104,47 @@
 
         <!-- Team Detail Modal -->
         <div v-if="teamModal" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" @click.self="teamModal = null">
-            <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm shadow-2xl p-6">
+            <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
                 <div v-if="teamModalLoading" class="text-center py-8 text-gray-500 animate-pulse uppercase tracking-widest text-xs font-black">Loading...</div>
-                <div v-else>
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Team</p>
-                            <h2 class="text-4xl font-black text-white italic">{{ teamModal.number }}</h2>
-                            <p class="text-blue-400 font-bold mt-1">{{ teamModal.nickname }}</p>
+                <div v-else class="flex flex-col min-h-0">
+                    <!-- Fixed header -->
+                    <div class="p-6 pb-4">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Team</p>
+                                <h2 class="text-4xl font-black text-white italic">{{ teamModal.number }}</h2>
+                                <p class="text-blue-400 font-bold mt-1">{{ teamModal.nickname }}</p>
+                            </div>
+                            <button @click="teamModal = null" class="text-gray-600 hover:text-gray-300 transition-colors text-2xl leading-none">&times;</button>
                         </div>
-                        <button @click="teamModal = null" class="text-gray-600 hover:text-gray-300 transition-colors text-2xl leading-none">&times;</button>
+                        <div v-if="teamModal.city" class="text-xs text-gray-500 mb-5">{{ teamModal.city }}, {{ teamModal.state_prov }}</div>
+                        <div class="grid grid-cols-3 gap-3 text-center">
+                            <div class="bg-gray-800 rounded-xl p-3">
+                                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Rank</p>
+                                <p class="text-2xl font-black text-white">{{ teamModal.rank ?? '—' }}</p>
+                                <p v-if="teamModal.rankTotal" class="text-[10px] text-gray-600">of {{ teamModal.rankTotal }}</p>
+                            </div>
+                            <div class="bg-gray-800 rounded-xl p-3">
+                                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Record</p>
+                                <p class="text-lg font-black">
+                                    <span class="text-green-400">{{ teamModal.wins ?? '—' }}</span>
+                                    <span class="text-gray-600">-</span>
+                                    <span class="text-red-400">{{ teamModal.losses ?? '—' }}</span>
+                                    <span class="text-gray-600">-</span>
+                                    <span class="text-amber-400">{{ teamModal.ties ?? '—' }}</span>
+                                </p>
+                                <p class="text-[10px] text-gray-600">W-L-T</p>
+                            </div>
+                            <div class="bg-gray-800 rounded-xl p-3">
+                                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Played</p>
+                                <p class="text-2xl font-black text-white">{{ teamModal.played ?? '—' }}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div v-if="teamModal.city" class="text-xs text-gray-500 mb-5">{{ teamModal.city }}, {{ teamModal.state_prov }}</div>
-                    <div class="grid grid-cols-3 gap-3 text-center">
-                        <div class="bg-gray-800 rounded-xl p-3">
-                            <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Rank</p>
-                            <p class="text-2xl font-black text-white">{{ teamModal.rank ?? '—' }}</p>
-                            <p v-if="teamModal.rankTotal" class="text-[10px] text-gray-600">of {{ teamModal.rankTotal }}</p>
-                        </div>
-                        <div class="bg-gray-800 rounded-xl p-3">
-                            <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Record</p>
-                            <p class="text-lg font-black">
-                                <span class="text-green-400">{{ teamModal.wins ?? '—' }}</span>
-                                <span class="text-gray-600">-</span>
-                                <span class="text-red-400">{{ teamModal.losses ?? '—' }}</span>
-                                <span class="text-gray-600">-</span>
-                                <span class="text-amber-400">{{ teamModal.ties ?? '—' }}</span>
-                            </p>
-                            <p class="text-[10px] text-gray-600">W-L-T</p>
-                        </div>
-                        <div class="bg-gray-800 rounded-xl p-3">
-                            <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Played</p>
-                            <p class="text-2xl font-black text-white">{{ teamModal.played ?? '—' }}</p>
-                        </div>
-                    </div>
-                    <div v-if="teamModal.scouting && Object.keys(teamModal.scouting).length" class="mt-4 border-t border-gray-800 pt-4 space-y-2">
+                    <!-- Scrollable scouting notes -->
+                    <div v-if="teamModal.scouting && Object.keys(teamModal.scouting).length" class="overflow-y-auto border-t border-gray-800 p-6 pt-4 space-y-2">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Scouting Notes</p>
-                        <div v-for="(value, key) in teamModal.scouting" :key="key" class="flex justify-between gap-4 text-sm">
+                        <div v-for="(value, key) in teamModal.scouting" v-if="key !== 'Timestamp'" :key="key" class="flex justify-between gap-4 text-sm">
                             <span class="text-gray-500 font-bold shrink-0">{{ key }}</span>
                             <span class="text-gray-200 text-right">{{ value }}</span>
                         </div>
@@ -220,12 +224,14 @@
                 const teamModalLoading = ref(false);
                 let intervalId = null;
 
+                let manualSettings = ref(true);
                 const settings = reactive({
-                    apiKey: localStorage.getItem('TBA_API_KEY') || '',
-                    teamNumber: localStorage.getItem('TBA_TEAM_NUM') || '1350',
-                    eventKey: localStorage.getItem('TBA_EVENT_KEY') || '2026nhdur',
-                    sheetsApiKey: localStorage.getItem('SHEETS_API_KEY') || '',
-                    sheetsId: localStorage.getItem('SHEETS_ID') || '',
+                    apiKey: 'x',
+                    teamNumber: '1350',
+                    eventKey: '2026nhdur',
+                    sheetsApiKey: 'x',
+                    sheetsId: 'x',
+                    sheetName: 'Form Responses 1',
                 });
 
                 const scoutingData = ref({});  // team number string -> { header: value, ... }
@@ -233,19 +239,23 @@
                 const fetchScoutingData = async () => {
                     if (!settings.sheetsApiKey || !settings.sheetsId) return;
                     try {
-                        const url = `https://sheets.googleapis.com/v4/spreadsheets/${settings.sheetsId}/values/Sheet1?key=${settings.sheetsApiKey}`;
+                        const url = `https://sheets.googleapis.com/v4/spreadsheets/${settings.sheetsId}/values/${settings.sheetName}?key=${settings.sheetsApiKey}`;
                         const res = await fetch(url);
                         const data = await res.json();
                         const rows = data.values;
+                        console.log(data.values)
                         if (!rows || rows.length < 2) return;
-                        const headers = rows[0];  // row 0: header labels; column 0 is team number
+                        const headers = rows[0];
+                        const teamColIdx = headers.findIndex(h => /^team\W*num/i.test(h));
+                        if (teamColIdx === -1) { console.error('Sheets: no team number column found'); return; }
                         const map = {};
                         for (let i = 1; i < rows.length; i++) {
                             const row = rows[i];
-                            const teamNum = String(row[0]).trim();
+                            const teamNum = String(row[teamColIdx] ?? '').trim();
                             if (!teamNum) continue;
                             const attrs = {};
-                            for (let j = 1; j < headers.length; j++) {
+                            for (let j = 0; j < headers.length; j++) {
+                                if (j === teamColIdx) continue;
                                 if (row[j] !== undefined && row[j] !== '') {
                                     attrs[headers[j]] = row[j];
                                 }
@@ -297,6 +307,7 @@
                     localStorage.setItem('TBA_EVENT_KEY', settings.eventKey);
                     localStorage.setItem('SHEETS_API_KEY', settings.sheetsApiKey);
                     localStorage.setItem('SHEETS_ID', settings.sheetsId);
+                    localStorage.setItem('SHEET_NAME', settings.sheetName);
                     showSettings.value = false;
                     fetchMatches();
                     fetchScoutingData();
@@ -371,8 +382,8 @@
                 onMounted(() => { fetchMatches(); fetchScoutingData(); startTimer(); });
                 onUnmounted(() => clearInterval(intervalId));
 
-                return { 
-                    settings, showSettings, loading, matches, sortedMatches, timer, ranking,
+                return {
+                    settings, showSettings, manualSettings, loading, matches, sortedMatches, timer, ranking,
                     teamModal, teamModalLoading, openTeamModal,
                     saveSettings, isOnRed, getMyScore, getTheirScore, isNext, nextMatch, stats,
                     cleanTeam: (key) => key.replace('frc', ''),
