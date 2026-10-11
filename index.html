@@ -67,7 +67,7 @@
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div>
                     <span class="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-full animate-pulse uppercase tracking-widest">Coming Up Next</span>
-                    <h2 class="text-4xl font-black mt-2 italic uppercase">Match {{ nextMatch.match_number }}</h2>
+                    <h2 class="text-4xl font-black mt-2 italic uppercase">{{ matchLabel(nextMatch) }}</h2>
                     <p class="text-blue-300 font-medium italic underline decoration-blue-500/50 underline-offset-4 uppercase">
                         {{ isOnRed(nextMatch) ? 'Red' : 'Blue' }} Alliance
                     </p>
@@ -153,22 +153,30 @@
             </div>
         </div>
 
-        <div v-if="!loading && matches.length" class="space-y-3">
-            <div v-for="match in sortedMatches" :key="match.key"
-                 :class="isNext(match) ? 'next-match-highlight shadow-xl ring-2 ring-blue-500/20' : 'bg-gray-900 border-gray-800'"
+        <div v-if="!loading && displayMatches.length" class="space-y-3">
+            <template v-for="(match, i) in displayMatches" :key="match.key">
+            <div v-if="displayMatches.some(isPlayoff) && (i === 0 || isPlayoff(match) !== isPlayoff(displayMatches[i - 1]))"
+                 :class="i === 0 ? 'pb-1' : 'pt-6 pb-1'" class="flex items-center gap-3">
+                <span :class="isPlayoff(match) ? 'text-amber-400' : 'text-gray-500'" class="text-[10px] font-black uppercase tracking-widest">
+                    {{ isPlayoff(match) ? 'Playoff Bracket' : 'Qualifications' }}
+                </span>
+                <div class="flex-1 h-px bg-gray-800"></div>
+            </div>
+            <div :class="isNext(match) ? 'next-match-highlight shadow-xl ring-2 ring-blue-500/20' : 'bg-gray-900 border-gray-800'"
                  class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center border p-3 rounded-xl transition-all">
 
                 <div class="col-span-2 flex items-center gap-4">
                     <div class="text-center min-w-[50px]">
-                        <span class="block text-[9px] font-bold text-gray-500 uppercase leading-none">{{ match.comp_level }}</span>
-                        <span class="text-xl font-black italic">#{{ match.match_number }}</span>
+                        <span class="block text-[9px] font-bold text-gray-500 uppercase leading-none">{{ matchLevel(match) }}</span>
+                        <span class="text-xl font-black italic">#{{ matchNumber(match) }}</span>
                     </div>
-                    <div :class="isOnRed(match) ? 'bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.3)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.3)]'" class="w-2.5 h-10 rounded-full"></div>
+                    <div v-if="hasTeam(match)" :class="isOnRed(match) ? 'bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.3)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.3)]'" class="w-2.5 h-10 rounded-full"></div>
+                    <div v-else class="w-2.5 h-10 rounded-full bg-gradient-to-b from-red-600 to-blue-600 opacity-50"></div>
                 </div>
 
                 <div class="col-span-4 flex gap-1.5 justify-center md:justify-start">
-                    <div v-for="team in (isOnRed(match) ? match.alliances.red.team_keys : match.alliances.blue.team_keys)"
-                         :class="cleanTeam(team) == settings.teamNumber ? 'bg-white text-black scale-110 shadow-md ring-1 ring-white' : 'bg-gray-800 text-gray-400'"
+                    <div v-for="team in match.alliances[leftColor(match)].team_keys"
+                         :class="cleanTeam(team) == settings.teamNumber ? 'bg-white text-black scale-110 shadow-md ring-1 ring-white' : hasTeam(match) ? 'bg-gray-800 text-gray-400' : 'bg-red-950 text-red-200'"
                          class="px-2 py-1.5 rounded font-bold text-xs font-mono w-14 text-center cursor-pointer hover:brightness-125 transition-all"
                          @click="openTeamModal(team)">
                         {{ cleanTeam(team) }}
@@ -176,30 +184,32 @@
                 </div>
 
                 <div class="col-span-3 text-center md:text-left">
-                    <div v-if="getMyScore(match) === '--'" class="flex flex-col">
+                    <div v-if="isUnplayed(match)" class="flex flex-col">
                         <span class="text-[9px] text-gray-500 uppercase font-black tracking-widest leading-none">Estimated Start</span>
                         <span class="text-lg font-bold text-blue-400">{{ formatTime(match.predicted_time || match.time) }}</span>
                     </div>
                     <div v-else class="flex flex-col">
                         <div class="flex items-center gap-3 justify-center md:justify-start leading-none">
-                            <span class="text-xl font-black" :class="getMyScore(match) > getTheirScore(match) ? 'text-green-400' : 'text-red-400'">{{ getMyScore(match) }}</span>
+                            <span class="text-xl font-black" :class="scoreClass(match, leftColor(match))">{{ match.alliances[leftColor(match)].score }}</span>
                             <span class="text-gray-700 font-light">/</span>
-                            <span class="text-xl font-black text-gray-500">{{ getTheirScore(match) }}</span>
+                            <span class="text-xl font-black" :class="scoreClass(match, rightColor(match))">{{ match.alliances[rightColor(match)].score }}</span>
                         </div>
-                        <span class="text-[9px] font-black uppercase tracking-widest mt-1" :class="getMyScore(match) > getTheirScore(match) ? 'text-green-500/50' : 'text-red-500/50'">
-                            {{ getMyScore(match) > getTheirScore(match) ? 'WIN' : 'LOSS' }}
+                        <span class="text-[9px] font-black uppercase tracking-widest mt-1 opacity-50" :class="resultClass(match)">
+                            {{ resultLabel(match) }}
                         </span>
                     </div>
                 </div>
 
                 <div class="col-span-3 flex justify-end gap-1.5">
-                    <div v-for="team in (isOnRed(match) ? match.alliances.blue.team_keys : match.alliances.red.team_keys)"
-                         class="px-2 py-1.5 rounded bg-gray-800 text-gray-200 text-xs font-bold font-mono w-14 text-center cursor-pointer hover:brightness-125 transition-all"
+                    <div v-for="team in match.alliances[rightColor(match)].team_keys"
+                         :class="hasTeam(match) ? 'bg-gray-800 text-gray-200' : 'bg-blue-950 text-blue-200'"
+                         class="px-2 py-1.5 rounded text-xs font-bold font-mono w-14 text-center cursor-pointer hover:brightness-125 transition-all"
                          @click="openTeamModal(team)">
                         {{ cleanTeam(team) }}
                     </div>
                 </div>
             </div>
+            </template>
         </div>
 
         <div v-else-if="loading" class="text-center py-20 text-gray-500 animate-pulse uppercase tracking-widest text-xs font-black">Connecting...</div>
@@ -218,7 +228,7 @@
                 const showSettings = ref(false);
                 const loading = ref(true);
                 const timer = ref(60);
-                const matches = ref([]);
+                const allMatches = ref([]);  // every match at the event
                 const ranking = ref(null);
                 const teamModal = ref(null);
                 const teamModalLoading = ref(false);
@@ -288,7 +298,7 @@
                         const [matchData, rankData] = await Promise.all([matchRes.json(), rankRes.json()]);
 
                         if (Array.isArray(matchData)) {
-                            matches.value = matchData.filter(m => [...m.alliances.red.team_keys, ...m.alliances.blue.team_keys].includes(teamKey));
+                            allMatches.value = matchData;
                         }
 
                         if (rankData && Array.isArray(rankData.rankings)) {
@@ -324,27 +334,66 @@
                 };
 
                 // Helpers
-                const sortedMatches = computed(() => [...matches.value].sort((a, b) => (a.time || 0) - (b.time || 0)));
-                const nextMatch = computed(() => sortedMatches.value.find(m => m.alliances.red.score === -1) || null);
+                const hasTeam = (m) => [...m.alliances.red.team_keys, ...m.alliances.blue.team_keys].includes(`frc${settings.teamNumber}`);
+                const isOnRed = (m) => m.alliances.red.team_keys.includes(`frc${settings.teamNumber}`);
+                const isPlayoff = (m) => m.comp_level !== 'qm';
+                const isUnplayed = (m) => m.alliances.red.score == null || m.alliances.red.score < 0;
+
+                // Playoff matches often have no scheduled time, so order by level / set / match instead of time.
+                // In double-elim brackets TBA numbers each playoff match by set_number (sf1m1, sf2m1, ...).
+                const LEVEL_ORDER = { qm: 0, ef: 1, qf: 2, sf: 3, f: 4 };
+                const compareMatches = (a, b) =>
+                    (LEVEL_ORDER[a.comp_level] - LEVEL_ORDER[b.comp_level]) ||
+                    (a.set_number - b.set_number) ||
+                    (a.match_number - b.match_number);
+
+                const matches = computed(() => allMatches.value.filter(hasTeam));
+                const sortedMatches = computed(() => [...matches.value].sort(compareMatches));
+                // The whole playoff bracket first, then our qualification matches
+                const displayMatches = computed(() => allMatches.value.filter(m => isPlayoff(m) || hasTeam(m))
+                    .sort((a, b) => (isPlayoff(b) - isPlayoff(a)) || compareMatches(a, b)));
+                const nextMatch = computed(() => sortedMatches.value.find(isUnplayed) || null);
                 const isNext = (match) => nextMatch.value && match.key === nextMatch.value.key;
-                const isOnRed = (match) => match.alliances.red.team_keys.includes(`frc${settings.teamNumber}`);
-                
-                const getMyScore = (m) => {
-                    const s = isOnRed(m) ? m.alliances.red.score : m.alliances.blue.score;
-                    return s === -1 ? '--' : s;
+
+                const matchLevel = (m) => ({ qm: 'Qual', ef: 'Octo', qf: 'QF', sf: 'Playoff', f: 'Final' })[m.comp_level] ?? m.comp_level;
+                const matchNumber = (m) => {
+                    if (m.comp_level === 'qm' || m.comp_level === 'f') return m.match_number;
+                    return m.match_number > 1 ? `${m.set_number}-${m.match_number}` : m.set_number;
+                };
+                const matchLabel = (m) => `${matchLevel(m)} ${matchNumber(m)}`;
+
+                // Our alliance on the left when we're in the match; otherwise red on the left
+                const leftColor = (m) => hasTeam(m) && !isOnRed(m) ? 'blue' : 'red';
+                const rightColor = (m) => leftColor(m) === 'red' ? 'blue' : 'red';
+                const winner = (m) => {
+                    const r = m.alliances.red.score, b = m.alliances.blue.score;
+                    return r > b ? 'red' : b > r ? 'blue' : null;
+                };
+                const resultLabel = (m) => {
+                    const w = winner(m);
+                    if (!w) return 'TIE';
+                    if (hasTeam(m)) return w === leftColor(m) ? 'WIN' : 'LOSS';
+                    return `${w.toUpperCase()} WINS`;
+                };
+                const resultClass = (m) => {
+                    const w = winner(m);
+                    if (!w) return 'text-amber-400';
+                    if (hasTeam(m)) return w === leftColor(m) ? 'text-green-400' : 'text-red-400';
+                    return w === 'red' ? 'text-red-400' : 'text-blue-400';
+                };
+                const scoreClass = (m, color) => {
+                    if (hasTeam(m)) return color === leftColor(m) ? resultClass(m) : 'text-gray-500';
+                    return winner(m) === color ? (color === 'red' ? 'text-red-400' : 'text-blue-400') : 'text-gray-500';
                 };
 
-                const getTheirScore = (m) => {
-                    const s = isOnRed(m) ? m.alliances.blue.score : m.alliances.red.score;
-                    return s === -1 ? '--' : s;
-                };
-
+                // Record reflects qualification matches only
                 const stats = computed(() => {
-                    const played = matches.value.filter(m => m.alliances.red.score !== -1);
+                    const played = matches.value.filter(m => !isPlayoff(m) && !isUnplayed(m));
+                    const results = played.map(m => winner(m) === null ? 'tie' : winner(m) === leftColor(m) ? 'win' : 'loss');
                     return {
-                        wins: played.filter(m => getMyScore(m) > getTheirScore(m)).length,
-                        losses: played.filter(m => getMyScore(m) < getTheirScore(m)).length,
-                        ties: played.filter(m => getMyScore(m) === getTheirScore(m)).length
+                        wins: results.filter(r => r === 'win').length,
+                        losses: results.filter(r => r === 'loss').length,
+                        ties: results.filter(r => r === 'tie').length
                     };
                 });
 
@@ -384,9 +433,10 @@
                 onUnmounted(() => clearInterval(intervalId));
 
                 return {
-                    settings, showSettings, manualSettings, loading, matches, sortedMatches, timer, ranking,
+                    settings, showSettings, manualSettings, loading, displayMatches, timer, ranking,
                     teamModal, teamModalLoading, openTeamModal,
-                    saveSettings, isOnRed, getMyScore, getTheirScore, isNext, nextMatch, stats,
+                    saveSettings, isOnRed, hasTeam, isPlayoff, isUnplayed, isNext, nextMatch, stats,
+                    matchLevel, matchNumber, matchLabel, leftColor, rightColor, resultLabel, resultClass, scoreClass,
                     cleanTeam: (key) => key.replace('frc', ''),
                     formatTime: (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'TBD'
                 };
