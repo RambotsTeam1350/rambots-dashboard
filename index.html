@@ -238,7 +238,7 @@
                 const scoutingData = ref({});  // team number string -> { header: value, ... }
 
                 const fetchScoutingData = async () => {
-                    if (!settings.sheetsApiKey || !settings.sheetsId) return;
+                    if (!settings.scoutingEnabled ||!settings.sheetsApiKey || !settings.sheetsId) return;
                     try {
                         const url = `https://sheets.googleapis.com/v4/spreadsheets/${settings.sheetsId}/values/${settings.sheetName}?key=${settings.sheetsApiKey}`;
                         const res = await fetch(url);
