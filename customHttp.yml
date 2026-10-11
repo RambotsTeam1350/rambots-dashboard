@@ -1,0 +1,15 @@
+# Don't let browsers cache the page or its config, so a redeploy with new settings
+# (e.g. a new EVENT_KEY) is picked up on the next refresh.
+customHeaders:
+  - pattern: '/'
+    headers:
+      - key: Cache-Control
+        value: no-cache
+  - pattern: '/index.html'
+    headers:
+      - key: Cache-Control
+        value: no-cache
+  - pattern: '/config.js'
+    headers:
+      - key: Cache-Control
+        value: no-cache

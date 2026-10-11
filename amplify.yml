@@ -1,0 +1,14 @@
+version: 1
+frontend:
+  phases:
+    build:
+      commands:
+        - mkdir -p dist
+        - cp index.html dist/
+        # Generates dist/config.js from the app's Amplify environment variables
+        # (TBA_API_KEY, TEAM_NUMBER, EVENT_KEY, SCOUTING_ENABLED, SHEETS_API_KEY, SHEETS_ID, SHEET_NAME)
+        - node scripts/write-config.mjs dist/config.js
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
